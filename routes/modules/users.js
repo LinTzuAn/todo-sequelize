@@ -11,7 +11,8 @@ router.get('/login', (req, res) => {
 
 router.post('/login', passport.authenticate('local', {
   successRedirect: '/',
-  failureRedirect: '/users/login'
+  failureRedirect: '/users/login',
+  failureFlash: true
 }))
 
 router.get('/register', (req, res) => {
@@ -20,10 +21,27 @@ router.get('/register', (req, res) => {
 
 router.post('/register', (req, res) => {
   const { name, email, password, confirmPassword } = req.body
+  const errors = []
+  if (!name || !email || !password || !confirmPassword) {
+    errors.push({ message: 'Please fill in all the blanks.' })
+  }
+  if (password !== confirmPassword) {
+    errors.push({ message: 'Passwords do not match.' })
+  }
+  if (errors.length) {
+    return res.render('register', {
+      errors,
+      name,
+      email,
+      password,
+      confirmPassword
+    })
+  }
   User.findOne({ where: { email } }).then(user => {
     if (user) {
-      console.log('User already exists')
+      errors.push({ message: 'This email address has been taken.' })
       return res.render('register', {
+        errors,
         name,
         email,
         password,
@@ -45,6 +63,7 @@ router.post('/register', (req, res) => {
 
 router.get('/logout', (req, res) => {
   req.logout()
+  req.flash('success_msg', 'You have been logout successfully.')
   res.redirect('/users/login')
 })
 
